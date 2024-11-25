@@ -1,0 +1,7 @@
+.BothLogin{
+  display: flex;
+  justify-items: center;
+  justify-content:space-evenly;
+  
+  height: 100%; 
+}

@@ -3,5 +3,5 @@ from . import views
 
 urlpatterns = [
     path('snowflake-login/', views.snowflake_login, name='snowflake_login'),
-    path('ssms-login/', views.SSMS_Login , name='SSMS_Login')
+    path('SSMS_Login_And_FetchData/', views.SSMS_Login_And_FetchData , name='SSMS_Login_And_FetchData')
 ]

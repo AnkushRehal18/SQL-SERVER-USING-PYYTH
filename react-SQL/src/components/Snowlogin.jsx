@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
+import { SiSnowflake } from "react-icons/si";
 
 const SnowflakeConnectForm = () => {
-  // Define state variables for each input field
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [account, setAccount] = useState('');
   const [warehouse, setWarehouse] = useState('');
-  const [database, setDatabase] = useState('');
-  const [schema, setSchema] = useState('');
-  const [connectionStatus, setConnectionStatus] = useState(''); // State for connection status
+  const [connectionStatus, setConnectionStatus] = useState('');
+  const [databases, setDatabases] = useState([]);
+  const [selectedDatabase, setSelectedDatabase] = useState('');
+  const [schemas, setSchemas] = useState([]); // State for schemas
+  const [selectedSchema, setSelectedSchema] = useState(''); // State for selected schema
 
-  // Function to handle form submission
+  // Handle Snowflake login and fetch databases
   const handleConnect = async (e) => {
     e.preventDefault();
 
@@ -18,14 +20,15 @@ const SnowflakeConnectForm = () => {
       const response = await fetch('http://127.0.0.1:8000/api/snowflake-login/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password, account, warehouse, database, schema }),
+        body: JSON.stringify({ username, password, account, warehouse }),
       });
 
       const data = await response.json();
-      alert(data.message || "Login Failed")
-      // Update connection status based on response
+      alert(data.message || "Login Failed");
+
       if (response.ok) {
         setConnectionStatus('Connected');
+        setDatabases(data.databases || []);
       } else {
         setConnectionStatus('Not Connected');
       }
@@ -35,15 +38,46 @@ const SnowflakeConnectForm = () => {
     }
   };
 
+  // Fetch schemas for the selected database
+  const fetchSchemas = async (database) => {
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/snowflake-login/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password, account, warehouse, selected_database: database }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setSchemas(data.schemas || []);
+      } else {
+        console.error('Error fetching schemas:', data.message);
+      }
+    } catch (error) {
+      console.error('Error fetching schemas:', error);
+    }
+  };
+
+  // Handle database selection
+  const handleDatabaseChange = (e) => {
+    const database = e.target.value;
+    setSelectedDatabase(database);
+    setSchemas([]); // Reset schemas
+    setSelectedSchema(''); // Reset selected schema
+    if (database) {
+      fetchSchemas(database); // Fetch schemas for the selected database
+    }
+  };
+
   return (
-    <div className="w-[1000px] ml-[330px]">
-      <h2 className="text-3xl text-blue-700">Connect to Snowflake</h2>
-      <br />
+    <div className="container">
+      <h2 className="header1">
+        <SiSnowflake /> Connect To Snowflake
+      </h2>
       <div>
-        <label className="mt-10 text-2xl text-blue-500">Username</label>
-        <br />
+        <label className="Username">Username</label>
         <input
-          className="w-[250px] h-[40px] p-2 border rounded-md"
+          className="UsernameInput"
           placeholder="Enter your Username"
           type="text"
           value={username}
@@ -51,10 +85,9 @@ const SnowflakeConnectForm = () => {
         />
       </div>
       <div>
-        <label className="mt-10 text-2xl text-blue-500">Password</label>
-        <br />
+        <label className="Password">Password</label>
         <input
-          className="w-[250px] h-[40px] p-2 border rounded-md"
+          className="PasswordInput"
           placeholder="Enter your password"
           type="password"
           value={password}
@@ -62,10 +95,9 @@ const SnowflakeConnectForm = () => {
         />
       </div>
       <div>
-        <label className="mt-10 text-2xl text-blue-500">Account</label>
-        <br />
+        <label className="Account">Account</label>
         <input
-          className="w-[250px] h-[40px] p-2 border rounded-md"
+          className="AccountInput"
           placeholder="Enter your account"
           type="text"
           value={account}
@@ -73,56 +105,73 @@ const SnowflakeConnectForm = () => {
         />
       </div>
       <div>
-        <label className="mt-10 text-2xl text-blue-500">Warehouse</label>
-        <br />
+        <label className="Warehouse">Warehouse</label>
         <input
-          className="w-[250px] h-[40px] p-2 border rounded-md"
+          className="warehouseinput"
           placeholder="Enter your Warehouse"
           type="text"
           value={warehouse}
           onChange={(e) => setWarehouse(e.target.value)}
         />
       </div>
-      <div>
-        <label className="mt-10 text-2xl text-blue-500">Database</label>
-        <br />
-        <input
-          className="w-[250px] h-[40px] p-2 border rounded-md"
-          placeholder="Enter your Database"
-          type="text"
-          value={database}
-          onChange={(e) => setDatabase(e.target.value)}
-        />
-      </div>
-      <div>
-        <label className="mt-10 text-2xl text-blue-500">Schema</label>
-        <br />
-        <input
-          className="w-[250px] h-[40px] p-2 border rounded-md"
-          placeholder="Enter your Schema"
-          type="text"
-          value={schema}
-          onChange={(e) => setSchema(e.target.value)}
-        />
-      </div>
-      <button
-        className="bg-blue-500 h-9 w-[270px] mt-[20px] text-xl font-serif text-white hover:bg-sky-700 border rounded-lg"
-        onClick={handleConnect}
-      >
+      <button className="Connectbtn" onClick={handleConnect}>
         Connect
       </button>
 
-      {/* Connection Status */}
-      <div className="flex items-center space-x-4 mt-5">
-        <span id="connection-status" className="text-xl text-blue-500">
+      <div className="ConnectionStatus">
+        <span id="connection-status" className="ConnectionStatus1 text-primary fs-5">
           Connection Status:
         </span>
         {connectionStatus === 'Connected' ? (
-          <p className="text-green-600 text-xl">Connected</p>
-        ) :(
-          <p className="text-red-600 text-xl">Not Connected</p>
+          <p className="Connected text-green">Connected</p>
+        ) : (
+          <p className="notConnected text-red">Not Connected</p>
         )}
       </div>
+
+      {connectionStatus === 'Connected' && databases.length > 0 && (
+        <div className="DatabaseSelection">
+          <label htmlFor="database-select">Choose a Database:</label>
+          <select
+            id="database-select"
+            value={selectedDatabase}
+            onChange={handleDatabaseChange}
+          >
+            <option value="">--Select a Database--</option>
+            {databases.map((db, index) => (
+              <option key={index} value={db}>
+                {db}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {schemas.length > 0 && (
+        <div className="SchemaSelection">
+          <label htmlFor="schema-select">Choose a Schema:</label>
+          <select
+            id="schema-select"
+            value={selectedSchema}
+            onChange={(e) => setSelectedSchema(e.target.value)}
+          >
+            <option value="">--Select a Schema--</option>
+            {schemas.map((schema, index) => (
+              <option key={index} value={schema}>
+                {schema}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+       {/* Display selected schmema */}
+       {selectedSchema && (
+                    <div className="SelectedSchema">
+                        <h3 className="SelectedSchema">Selected Schema: {selectedSchema}</h3>
+                    </div>
+                )}
+      
     </div>
   );
 };

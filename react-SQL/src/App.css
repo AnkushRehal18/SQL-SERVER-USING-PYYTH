@@ -1,7 +1,295 @@
-.BothLogin{
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Arial', sans-serif;
+  background: linear-gradient(to bottom, #da9fcc, #93aae0);
+  min-height: 100vh;
+  color: #333;
   display: flex;
-  justify-items: center;
-  justify-content:space-evenly;
-  
-  height: 100%; 
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Main container for the page */
+.BothLogin {
+  display: flex;
+  justify-content: space-evenly; /* Space between the forms */
+  align-items: stretch;
+  padding: 80px 40px 40px;
+  width: 100%;
+  max-width: 1400px; /* Increase the maximum width of the container */
+  gap: 40px; /* Add more spacing between the sections */
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Heading Styling */
+.BothLogin h1 {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 40px;
+  font-weight: 800;
+  color: #000101;
+  text-align: center;
+  margin: 0;
+  text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Individual form containers */
+.BothLogin > div {
+  flex: 1; /* Keep equal width for both sections */
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.1);
+  padding: 40px; /* Increase padding for better spacing */
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: auto;
+  min-height: 550px; /* Increase the minimum height slightly */
+  min-width: 500px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.BothLogin > div:hover {
+  transform: translateY(-2px);
+  box-shadow: 0px 15px 30px rgba(0, 0, 0, 0.2);
+}
+
+/* Form Title */
+.BothLogin > div h2 {
+  font-size: 24px;
+  color: #5a5a5a;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+/* Input fields */
+.BothLogin input {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.BothLogin input:focus {
+  outline: none;
+  border-color: #4b7bec;
+  box-shadow: 0 0 10px rgba(75, 123, 236, 0.3);
+}
+
+/* Buttons */
+.BothLogin button {
+  background: linear-gradient(to right, #4b7bec, #3867d6);
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+  border: none;
+  border-radius: 10px;
+  padding: 12px;
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.BothLogin button:hover {
+  background: linear-gradient(to right, #3867d6, #274bc1);
+  transform: scale(1.05);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .BothLogin {
+    flex-direction: column;
+    padding: 20px;
+  }
+
+  .BothLogin > div {
+    max-width: 100%;
+    margin-bottom: 20px;
+  }
+
+  .BothLogin h1 {
+    font-size: 32px;
+  }
+
+}
+
+.loadbtn{
+  background: linear-gradient(to right, #4b7bec, #3867d6);
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+  border: none;
+  border-radius: 10px;
+  padding: 12px;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.2s ease;
+  text-align: center;
+  align-items: center;
+  margin-bottom: 20px;
+  width:20%;
+}
+
+.buttonclass{
+  display: flex;
+  width: 100%;
+  justify-content: center;
+}
+  .loadbtn input:focus {
+    outline: none;
+    border-color: #4b7bec;
+    box-shadow: 0 0 10px rgba(75, 123, 236, 0.3);
+  }
+
+  .loadbtn:hover{
+    background: linear-gradient(to right, #3867d6, #274bc1);
+    transform: scale(1.05);
+  }
+
+/* Container styling */
+.container {
+  width: 100%;
+  margin: 0 auto; /* Center the component */
+  background: white;
+  padding: 30px;
+  border-radius: 15px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Heading styling */
+.container h2 {
+  font-size: 24px;
+  color: #34495e;
+  text-align: center;
+  margin-bottom: 20px;
+  font-weight: 600;
+  text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Labels */
+.container label {
+  font-size: 16px;
+  font-weight: 500;
+  color: #5a5a5a;
+  margin-bottom: 5px;
+  display: block;
+}
+
+/* Input fields */
+.container input {
+  width: 100%;
+  padding: 12px;
+  font-size: 14px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  margin-bottom: 15px;
+  transition: all 0.3s ease;
+}
+
+.container input:focus {
+  border-color: #4b7bec;
+  box-shadow: 0 0 10px rgba(75, 123, 236, 0.2);
+  outline: none;
+}
+
+/* Connect button */
+.connectbtn {
+  background: linear-gradient(to right, #4b7bec, #3867d6);
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 12px;
+  width: 100%;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: all 0.3s ease;
+}
+
+.connectbtn:hover {
+  background: linear-gradient(to right, #3867d6, #274bc1);
+  transform: scale(1.03);
+}
+
+/* Connection status */
+.ConnectionStatus {
+  margin-top: 15px;
+  font-size: 16px;
+  font-weight: 500;
+  color: #5a5a5a;
+}
+
+.ConnectionStatus .text-green {
+  color: #27ae60;
+  font-weight: bold;
+}
+
+.ConnectionStatus .text-red {
+  color: #e74c3c;
+  font-weight: bold;
+}
+
+/* Dropdowns */
+.container select {
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  margin-top: 10px;
+  transition: all 0.3s ease;
+}
+
+.container select:focus {
+  border-color: #4b7bec;
+  box-shadow: 0 0 10px rgba(75, 123, 236, 0.2);
+  outline: none;
+}
+
+/* Table and Database Selection Titles */
+.SelectDatabase, .SelectTable, .SelectedTable3 {
+  font-size: 18px;
+  color: #34495e;
+  font-weight: 500;
+  margin-top: 20px;
+  text-align: left;
+}
+
+/* Selected Table Display */
+.SelectedTable2 {
+  margin-top: 15px;
+  padding: 10px;
+  background: #f8f9fa;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  text-align: center;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .container {
+    width: 90%;
+    padding: 20px;
+  }
+
+  .container h2 {
+    font-size: 20px;
+  }
+
+  .connectbtn {
+    font-size: 14px;
+  }
+
+  .container select, .container input {
+    font-size: 14px;
+  }
 }

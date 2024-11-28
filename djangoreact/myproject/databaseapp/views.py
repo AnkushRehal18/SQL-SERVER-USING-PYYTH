@@ -521,7 +521,7 @@ def load_to_snowflake(request):
         'account': data.get('sfAccount'),
         'warehouse': data.get('sfWarehouse'),
         'database': data.get('ssmsDatabase'),
-        'schema': data.get('selectedSchema')
+        'schema': data.get('selectedSchema'),
     }
 
     # Initialize ETL with logging and chunk size
@@ -530,6 +530,7 @@ def load_to_snowflake(request):
         chunk_size=50000,  # Adjust based on your dataset and performance
         log_dir='./etl_logs'
     )
+
 
     # Example query
     query = "SELECT * FROM [export-18]"

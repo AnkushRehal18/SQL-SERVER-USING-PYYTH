@@ -256,7 +256,7 @@ body {
 }
 
 /* Table and Database Selection Titles */
-.SelectDatabase, .SelectTable, .SelectedTable3 {
+.SelectDatabase, .SelectTable, .SelectedTable3, .SelectedSchema{
   font-size: 18px;
   color: #34495e;
   font-weight: 500;

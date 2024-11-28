@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from "axios";
 import { ImDatabase } from "react-icons/im";
 
@@ -12,7 +12,17 @@ const SSMSConn = () => {
     const [selectedDatabase, setSelectedDatabase] = useState(''); // State for selected database
     const [selectedTable, setSelectedTable] = useState(''); // State for selected table
 
-
+     // Update localStorage whenever selectedTable changes
+     useEffect(() => {
+        if (selectedTable) {
+            localStorage.setItem('ssmsSelectedTable', selectedTable);
+            localStorage.setItem('ssmsUsername', username);
+            localStorage.setItem('ssmsPassword', password);
+            localStorage.setItem('ssmsServerName', serverName);
+            localStorage.setItem('ssmsDatabase',selectedDatabase);
+        }
+    }, [selectedTable]);  // This runs every time selectedTable changes
+    
 
     // 1. handleConnect for coonnection
     // 2. handleDatabaseSelection
@@ -23,6 +33,7 @@ const SSMSConn = () => {
         console.log("Server Name:", serverName);
         console.log("Username:", username);
         console.log("Password:", password); // Be cautious with logging sensitive information
+        console.log("Database", selectedDatabase);
 
         // Show connecting status
         setConnectionStatus("Connecting...");

@@ -1,20 +1,48 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { SiSnowflake } from "react-icons/si";
 
 const SnowflakeConnectForm = () => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [account, setAccount] = useState('');
-  const [warehouse, setWarehouse] = useState('');
+  const [username, setUsername] = useState('Gurjot25');
+  const [password, setPassword] = useState('Jaspreet2002mahal@');
+  const [account, setAccount] = useState('RDB48775.us-west-2');
+  const [warehouse, setWarehouse] = useState('COMPUTE_WH');
   const [connectionStatus, setConnectionStatus] = useState('');
   const [databases, setDatabases] = useState([]);
-  const [selectedDatabase, setSelectedDatabase] = useState('');
   const [schemas, setSchemas] = useState([]); // State for schemas
+  const [selectedDatabase, setSelectedDatabase] = useState('');
   const [selectedSchema, setSelectedSchema] = useState(''); // State for selected schema
+  const [selectedTable1, setSelectedTable] = useState('');
+
+  useEffect(() => {
+    if (selectedTable1) {
+      localStorage.setItem('selectedTable1', selectedTable1);
+    }
+    if (selectedDatabase) {
+      localStorage.setItem('selectedDatabase', selectedDatabase);
+    }
+    if (selectedSchema) {
+      localStorage.setItem('selectedSchema', selectedSchema);
+    } 
+
+    if (username) {
+      localStorage.setItem('sfUsername', username);
+    } 
+    if (password) {
+      localStorage.setItem('sfPassword', password);
+    } 
+    if (account) {
+      localStorage.setItem('sfAccount', account);
+    } 
+    if (warehouse) {
+      localStorage.setItem('sfWarehouse', warehouse);
+    } 
+  }, [selectedDatabase,selectedSchema,selectedTable1])
+  
 
   // Handle Snowflake login and fetch databases
   const handleConnect = async (e) => {
     e.preventDefault();
+    console.log("handleConnect called----")
 
     try {
       const response = await fetch('http://127.0.0.1:8000/api/snowflake-login/', {
@@ -36,6 +64,7 @@ const SnowflakeConnectForm = () => {
       setConnectionStatus('Not Connected');
       console.error('Error connecting to Snowflake:', error);
     }
+    console.log("handleConnect end----")
   };
 
   // Fetch schemas for the selected database
@@ -171,8 +200,22 @@ const SnowflakeConnectForm = () => {
                         <h3 className="SelectedSchema">Selected Schema: {selectedSchema}</h3>
                     </div>
                 )}
-      
-    </div>
+
+
+        {schemas.length > 0 && (
+         <div className="TargetTable">
+           <label htmlFor="schema-select">Target Table Name:</label>
+         <input 
+          type="text" 
+          id="targetTableName" 
+          value={selectedTable1}
+          onChange={(e) => setSelectedTable(e.target.value)} 
+          />
+          </div>
+           )}
+
+        </div>
+
   );
 };
 

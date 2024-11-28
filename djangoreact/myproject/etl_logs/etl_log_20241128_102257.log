@@ -1,0 +1,2 @@
+2024-11-28 10:23:04,097 - ERROR: ETL Process Error: Execution failed on sql 'SELECT COUNT(*) as total FROM (SELECT * FROM [export-18]) subquery': ('42S02', "[42S02] [Microsoft][ODBC SQL Server Driver][SQL Server]Invalid object name 'export-18'. (208) (SQLExecDirectW)")
+2024-11-28 10:24:01,597 - ERROR: ETL Process Error: Execution failed on sql 'SELECT COUNT(*) as total FROM (SELECT * FROM [export-18]) subquery': ('42S02', "[42S02] [Microsoft][ODBC SQL Server Driver][SQL Server]Invalid object name 'export-18'. (208) (SQLExecDirectW)")

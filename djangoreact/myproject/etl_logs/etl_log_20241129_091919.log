@@ -1,0 +1,4 @@
+2024-11-29 09:19:36,665 - INFO: Total rows to process: 1
+2024-11-29 09:19:37,627 - INFO: Table userSelectedTable created successfully
+2024-11-29 09:20:15,934 - ERROR: ETL Process Error: 001757 (42601): SQL compilation error:
+Table 'GARDEN_PLANTS.VEGGIES."userSelectedTable"' does not exist

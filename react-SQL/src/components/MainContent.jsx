@@ -106,12 +106,13 @@ const MainContent = () => {
         <SSMSConn />
         <Snowlogin />
       </div>
-      <div className="buttonclass">
-        <div className="loadbtn">
-          <button id="ldbtn" onClick={handleLoadToSnowflake}>
-            LOAD
-          </button>
-        </div>
+      <div className="buttonclass" onClick={handleLoadToSnowflake} style={{ cursor: 'pointer' }}>
+      <div className="loadbtn" >
+  <button id="ldbtn" onClick={(e) => e.stopPropagation()}>
+    LOAD
+  </button>
+</div>
+
       </div>
     </>
   );

@@ -52,7 +52,7 @@ const SnowflakeConnectForm = () => {
       });
 
       const data = await response.json();
-      alert(data.message || "Login Failed");
+      // alert(data.message || "Login Failed");
 
       if (response.ok) {
         setConnectionStatus('Connected');

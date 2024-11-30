@@ -11,6 +11,8 @@ import pyodbc
 import pandas as pd
 import os
 import math
+from sqlalchemy import create_engine, text
+
 
 
 logger = logging.getLogger(__name__)
@@ -253,309 +255,303 @@ def SSMS_Login_And_FetchData(request):
 
 class SSMSToSnowflakeETL:
     """
-    A robust ETL class for migrating data from SQL Server to Snowflake 
+    A robust ETL class for migrating data from SQL Server to Snowflake
     with support for large datasets and advanced error handling.
     """
-
-    def __init__(self, snowflake_config: Dict, chunk_size: int = 100000, 
+ 
+    def __init__(self, snowflake_config: Dict, chunk_size: int = 100000,
                  log_dir: Optional[str] = None):
-        """
-        Initialize ETL process with configurable parameters.
-
-        Args:
-            snowflake_config (Dict): Snowflake connection configuration
-            chunk_size (int, optional): Number of rows to process in each chunk. Defaults to 100,000.
-            log_dir (str, optional): Directory for log files. Creates logs if specified.
-        """
         self.snowflake_config = snowflake_config
         self.chunk_size = chunk_size
-        
-        # Setup logging
         self.logger = self._setup_logging(log_dir)
-
+ 
     def _setup_logging(self, log_dir: Optional[str] = None) -> logging.Logger:
         """
         Configure logging with optional file logging.
-
-        Args:
-            log_dir (str, optional): Directory to store log files
-
-        Returns:
-            logging.Logger: Configured logger
         """
         logger = logging.getLogger('SSMSToSnowflakeETL')
         logger.setLevel(logging.INFO)
-        
-        # Console handler
+       
         console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.INFO)
         console_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s: %(message)s'))
         logger.addHandler(console_handler)
-
-        # File handler if log_dir is provided
+ 
         if log_dir:
             os.makedirs(log_dir, exist_ok=True)
             log_file = os.path.join(log_dir, f'etl_log_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log')
             file_handler = logging.FileHandler(log_file)
-            file_handler.setLevel(logging.INFO)
             file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s: %(message)s'))
             logger.addHandler(file_handler)
-
+ 
         return logger
-
-    def connect_to_ssms(self, server_name: str, database_name: str, 
-                         timeout: int = 30) -> pyodbc.Connection:
+ 
+    def connect_to_ssms(self, server_name: str, database_name: str) -> create_engine:
         """
-        Establish a connection to SQL Server with configurable timeout.
-
-        Args:
-            server_name (str): SQL Server instance name
-            database_name (str): Target database name
-            timeout (int, optional): Connection timeout in seconds. Defaults to 30.
-
-        Returns:
-            pyodbc.Connection: Database connection
+        Establish a connection to SQL Server using SQLAlchemy.
         """
         try:
-            conn_str = (
-                f'Driver={{SQL Server}};'
-                f'Server={server_name};'
-                f'Database={database_name};'
-                f'Trusted_Connection=yes;'
-                f'Connection Timeout={timeout};'
-            )
-            return pyodbc.connect(conn_str)
-        except pyodbc.Error as e:
+            conn_url = f"mssql+pyodbc://{server_name}/{database_name}?driver=SQL+Server"
+            print(f"Connecting to SSMS with URL: {conn_url}")
+            return create_engine(conn_url)
+        except Exception as e:
+            print(f"SSMS Connection Error: {e}")
             self.logger.error(f"SSMS Connection Error: {e}")
             raise
-
+ 
     def connect_to_snowflake(self) -> snowflake.connector.SnowflakeConnection:
         """
-        Establish a connection to Snowflake with robust error handling.
-
-        Returns:
-            snowflake.connector.SnowflakeConnection: Snowflake database connection
+        Establish a connection to Snowflake.
         """
         try:
-            return snowflake.connector.connect(**self.snowflake_config)
-        except snowflake.connector.errors.ProgrammingError as e:
+            print(f"Connecting to Snowflake with config: {self.snowflake_config}")
+            conn = snowflake.connector.connect(**self.snowflake_config)
+            with conn.cursor() as cursor:
+                cursor.execute(f"USE DATABASE {self.snowflake_config['database']}")
+                cursor.execute(f"USE SCHEMA {self.snowflake_config['schema']}")
+            print("Snowflake connection established.")
+            return conn
+        
+        except ProgrammingError as e:
+            print(f"Snowflake Connection Error: {e}")
             self.logger.error(f"Snowflake Connection Error: {e}")
             raise
-
-    def standardize_column_names(self, df: pd.DataFrame) -> pd.DataFrame:
+ 
+    def fetch_data_with_sqlalchemy(self, engine, query, offset, chunk_size):
         """
-        Standardize column names to prevent Snowflake compatibility issues.
-
-        Args:
-            df (pd.DataFrame): Input DataFrame
-
-        Returns:
-            pd.DataFrame: DataFrame with standardized column names
+        Fetch data from SQL Server using SQLAlchemy with offset and limit for chunking.
         """
-        df.columns = [
-            col.upper()
-            .replace(' ', '_')
-            .replace('-', '_')
-            .replace('.', '_')
-            .replace('(', '')
-            .replace(')', '')
-            for col in df.columns
-        ]
-        return df
-
-    def get_column_definitions(self, df: pd.DataFrame) -> str:
+        chunk_query = f"""
+        SELECT * FROM (
+            SELECT *, ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS row_num
+            FROM ({query}) subquery
+        ) AS paginated
+        WHERE row_num > :offset AND row_num <= :offset + :chunk_size
         """
-        Generate Snowflake column definitions dynamically.
-
-        Args:
-            df (pd.DataFrame): Input DataFrame
-
-        Returns:
-            str: SQL column definitions
+ 
+        print(f"Executing chunk query: {chunk_query}")
+       
+        with engine.connect() as connection:
+            result = connection.execute(
+                text(chunk_query),
+                {"offset": offset, "chunk_size": chunk_size}
+            )
+ 
+            # Fetch all rows from the result
+            rows = result.fetchall()  # Fetching the rows
+ 
+            # Check the raw result
+            print(f"Raw result fetched: {rows}")
+ 
+            # If rows are returned, convert them to a list of dicts
+            try:
+                if rows:
+                    # Convert each row to a dictionary
+                    data = [dict(zip(result.keys(), row)) for row in rows]
+                    print(f"Data converted to list of dictionaries: {data[:2]}")
+                else:
+                    print("No data in this chunk. Skipping.")
+                    data = []
+           
+            except Exception as e:
+                print(f"Error converting result to dict: {e}")
+                data = []  # Ensure data is empty in case of error
+ 
+            return data
+ 
+ 
+ 
+ 
+    def get_column_definitions_from_data(self, data: List[Dict], columns: List[str]) -> str:
+        """
+        Generate Snowflake column definitions dynamically based on data types.
         """
         type_mapping = {
-            'int64': 'NUMBER',
-            'float64': 'FLOAT',
-            'datetime64[ns]': 'TIMESTAMP_NTZ',
-            'bool': 'BOOLEAN',
-            'object': 'VARCHAR(16777216)'
+            int: 'NUMBER',
+            float: 'FLOAT',
+            str: 'VARCHAR(16777216)',
+            bool: 'BOOLEAN',
+            datetime: 'TIMESTAMP_NTZ'
         }
-
-        columns = [
-            f'"{col.upper()}" {type_mapping.get(str(dtype), "VARCHAR(16777216)")}'
-            for col, dtype in df.dtypes.items()
+ 
+        first_row = data[0]
+        print(f"Generating column definitions from first row: {first_row}")
+        column_definitions = [
+            f'"{col.upper()}" {type_mapping.get(type(first_row[col]), "VARCHAR(16777216)")}'
+            for col in columns
         ]
-        return ', '.join(columns)
-
+        column_def_str = ', '.join(column_definitions)
+        print(f"Generated column definitions: {column_def_str}")
+        return column_def_str
+ 
+    def insert_data_to_snowflake(self, snow_conn, target_table, data, columns):
+        """
+        Insert data into Snowflake using plain SQL.
+        """
+        insert_query = f"""
+        INSERT INTO {target_table} ({', '.join(columns)}) VALUES ({', '.join(['%s'] * len(columns))})
+        """
+       
+        print(f"Insert Query: {insert_query}")
+        self.logger.debug(f"Insert Query: {insert_query}")
+ 
+        with snow_conn.cursor() as cursor:
+            for idx, row in enumerate(data):
+                try:
+                    # Convert each row (dict) to a tuple of values in the same order as columns
+                    row_values = tuple(row.get(col, None) for col in columns)
+                   
+                    # Validate row values
+                    if len(row_values) != len(columns):
+                        raise ValueError(f"Row length mismatch. Expected {len(columns)}, got {len(row_values)}")
+                   
+                    # Debug the row and its values before execution
+                    print(f"Inserting row #{idx}: {row_values}")
+                    self.logger.debug(f"Inserting row #{idx}: {row_values}")
+                   
+                    cursor.execute(insert_query, row_values)
+                except Exception as e:
+                    print(f"Failed to insert row #{idx}: {row}. Error: {e}")
+                    self.logger.error(f"Failed to insert row #{idx}: {row}. Error: {e}")
+                    raise
+ 
     def extract_load_data(
-        self, 
-        server_name: str, 
-        database_name: str, 
+        self,
+        server_name: str,
+        database_name: str,
         query: str,
         target_table: str,
         create_table: bool = True
     ) -> Dict[str, int]:
         """
-        Comprehensive ETL process with chunk-based loading for large datasets.
-
-        Args:
-            server_name (str): SQL Server instance name
-            database_name (str): Source database name
-            query (str): SQL query to extract data
-            target_table (str): Snowflake target table name
-            create_table (bool, optional): Whether to create/recreate table. Defaults to True.
-
-        Returns:
-            Dict[str, int]: Summary of data transfer
+        Perform the ETL process: extract data from SSMS and load into Snowflake.
         """
-        ssms_conn = None
+        ssms_engine = None
         snow_conn = None
         total_rows_transferred = 0
         total_chunks = 0
-
+ 
         try:
-            # Connect to source and target databases
-            ssms_conn = self.connect_to_ssms(server_name, database_name)
+            ssms_engine = self.connect_to_ssms(server_name, database_name)
             snow_conn = self.connect_to_snowflake()
-
-            # Get total rows for progress tracking
+ 
             count_query = f"SELECT COUNT(*) as total FROM ({query}) subquery"
-            total_rows = pd.read_sql(count_query, ssms_conn).iloc[0]['total']
+            with ssms_engine.connect() as conn:
+                total_rows = conn.execute(text(count_query)).scalar()
+ 
+            print(f"Total rows to process: {total_rows}")
             self.logger.info(f"Total rows to process: {total_rows}")
-
-            # Chunk processing
             chunks = math.ceil(total_rows / self.chunk_size)
-            
+           
             for i in range(chunks):
-                # Modify query to chunk data
                 offset = i * self.chunk_size
-                chunked_query = f"""
-                SELECT * FROM (
-                    SELECT *, ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) as row_num 
-                    FROM ({query}) subquery
-                ) numbered_query
-                WHERE row_num BETWEEN {offset + 1} AND {offset + self.chunk_size}
-                """
-
-                # Extract chunk
-                df = pd.read_sql(chunked_query, ssms_conn)
-                
-                if df.empty:
+                print(f"Processing chunk {i+1}/{chunks} with offset {offset}")
+                data_chunk = self.fetch_data_with_sqlalchemy(ssms_engine, query, offset, self.chunk_size)
+ 
+                if not data_chunk:
+                    print("No data in this chunk. Skipping.")
                     break
-
-                # Standardize column names
-                df = self.standardize_column_names(df)
-
-                # Create table on first iteration if required
+ 
+                columns = list(data_chunk[0].keys())
+                print(f"Columns detected: {columns}")
+ 
                 if create_table and i == 0:
-                    column_definitions = self.get_column_definitions(df)
+                    column_definitions = self.get_column_definitions_from_data(data_chunk, columns)
                     self._create_snowflake_table(snow_conn, target_table, column_definitions)
-                    create_table = False  # Prevent recreation
-
-                # Load chunk to Snowflake
-                success, nchunks, nrows, _ = write_pandas(
-                    conn=snow_conn,
-                    df=df,
-                    table_name=target_table,
-                    database=self.snowflake_config['database'],
-                    schema=self.snowflake_config['schema']
-                )
-
-                total_rows_transferred += nrows
+                    create_table = False
+ 
+                self.insert_data_to_snowflake(snow_conn, target_table, data_chunk, columns)
+ 
+                total_rows_transferred += len(data_chunk)
                 total_chunks += 1
-
-                self.logger.info(f"Chunk {i+1}/{chunks}: Transferred {nrows} rows")
-
-            return JsonResponse({"msg": "passed 465"})
-
-            return {
-                'total_rows': total_rows_transferred,
-                'total_chunks': total_chunks
-            }
-
+                print(f"Chunk {i+1}/{chunks}: Transferred {len(data_chunk)} rows")
+                self.logger.info(f"Chunk {i+1}/{chunks}: Transferred {len(data_chunk)} rows")
+ 
+            return {"total_rows": total_rows_transferred, "total_chunks": total_chunks}
+ 
         except Exception as e:
+            print(f"ETL Process Error: {e}")
             self.logger.error(f"ETL Process Error: {e}")
             raise
         finally:
-            # Ensure connections are closed
-            if ssms_conn:
-                ssms_conn.close()
+            if ssms_engine:
+                ssms_engine.dispose()
             if snow_conn:
                 snow_conn.close()
-
-    def _create_snowflake_table(
-        self, 
-        snow_conn: snowflake.connector.SnowflakeConnection,
-        table_name: str, 
-        column_definitions: str
-    ) -> None:
+ 
+    def _create_snowflake_table(self, snow_conn, table_name, column_definitions):
         """
-        Create or replace Snowflake table with specified column definitions.
-
-        Args:
-            snow_conn (snowflake.connector.SnowflakeConnection): Snowflake connection
-            table_name (str): Target table name
-            column_definitions (str): SQL column definitions
+        Create or replace a table in Snowflake.
         """
-        create_table_sql = f"""
-        CREATE OR REPLACE TABLE {table_name} (
-            {column_definitions}
-        )
-        """
-        
+        if not table_name or not column_definitions:
+            raise ValueError("Table name or column definitions are missing.")
+       
+        create_table_sql = f"CREATE OR REPLACE TABLE {table_name} ({column_definitions})"
+        print(f"Creating table with SQL: {create_table_sql}")
+        self.logger.info(f"Creating table with SQL: {create_table_sql}")
+ 
         with snow_conn.cursor() as cursor:
             cursor.execute(create_table_sql)
-        
-        self.logger.info(f"Table {table_name} created successfully")
-
-
-# Example usage with enhanced configuration
+ 
+        print(f"Table {table_name} created successfully.")
+        self.logger.info(f"Table {table_name} created successfully.")
+ 
+ 
 @csrf_exempt
 def load_to_snowflake(request):
-    data = json.loads(request.body)
-
-    # Secure configuration management recommended
-    snowflake_config = {
-        'user': data.get('sfUsername'),
-        'password': data.get('sfPassword'),
-        'account': data.get('sfAccount'),
-        'warehouse': data.get('sfWarehouse'),
-        'database': data.get('ssmsDatabase'),
-        'schema': data.get('selectedSchema'),
-    }
-
-    # Initialize ETL with logging and chunk size
-    etl = SSMSToSnowflakeETL(
-        snowflake_config, 
-        chunk_size=50000,  # Adjust based on your dataset and performance
-        log_dir='./etl_logs'
-    )
-
-
-    # Example query
-    query = "SELECT * FROM [export-18]"
-
     try:
+        data = json.loads(request.body)
+ 
+        # Snowflake configuration
+        snowflake_config = {
+            'user': data.get('sfUsername'),
+            'password': data.get('sfPassword'),
+            'account': data.get('sfAccount'),
+            'warehouse': data.get('sfWarehouse'),
+            'database': data.get('selectedDatabase'),
+            'schema': data.get('selectedSchema')
+        }
+ 
+        etl = SSMSToSnowflakeETL(
+            snowflake_config,
+            chunk_size=50000,
+            log_dir='./etl_logs'
+        )
+
+        # Get the SSMS table name from the request
+        ssms_table = data.get('ssmsSelectedTable')
+        
+        if not ssms_table:
+            return JsonResponse({"msg": "SSMS table name is missing."}, status=400)
+
+        # Use the SSMS table dynamically in the query
+        query = f"SELECT * FROM {ssms_table}"
+        
+        # Perform ETL
         result = etl.extract_load_data(
             server_name=data.get('ssmsServerName'),
             database_name=data.get('ssmsDatabase'),
             query=query,
             target_table=data.get('userSelectedTable')
         )
-        print(f"Data Transfer Summary: {result}")
-        return JsonResponse({"msg": "passed"})
-
+ 
+        return JsonResponse({
+            "msg": "ETL Process Completed",
+            "details": {
+                "total_rows": result["total_rows"],
+                "total_chunks": result["total_chunks"]
+            }
+        }, status=200)
+ 
     except Exception as e:
-        print(f"ETL Process Failed: {e}")
-        return JsonResponse({"msg": f"ETL Process Failed: {e}"})
+        return JsonResponse({"msg": f"ETL Process Failed: {str(e)}"}, status=500)
+
+
+
+
+
 
 
 ### -----------     
-
-
-
-
-
 # class SSMSToSnowflakeETL:
 #     """
 #     A robust ETL class for migrating data from SQL Server to Snowflake 

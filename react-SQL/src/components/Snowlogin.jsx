@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { SiSnowflake } from "react-icons/si";
+import PulseLoader from "react-spinners/PulseLoader";
 
 const SnowflakeConnectForm = () => {
   const [username, setUsername] = useState('Gurjot25');
@@ -12,6 +13,8 @@ const SnowflakeConnectForm = () => {
   const [selectedDatabase, setSelectedDatabase] = useState('');
   const [selectedSchema, setSelectedSchema] = useState(''); // State for selected schema
   const [selectedTable1, setSelectedTable] = useState('');
+  const [loading, setLoading] = useState(false); // State to manage loader visibility
+  const [schemaLoading, setSchemaLoading] = useState(false); // State for table loading animation
 
   useEffect(() => {
     if (selectedTable1) {
@@ -42,7 +45,7 @@ const SnowflakeConnectForm = () => {
   // Handle Snowflake login and fetch databases
   const handleConnect = async (e) => {
     e.preventDefault();
-    console.log("handleConnect called----")
+    setLoading(true); 
 
     try {
       const response = await fetch('http://127.0.0.1:8000/api/snowflake-login/', {
@@ -63,8 +66,9 @@ const SnowflakeConnectForm = () => {
     } catch (error) {
       setConnectionStatus('Not Connected');
       console.error('Error connecting to Snowflake:', error);
+    }finally{
+      setLoading(false);
     }
-    console.log("handleConnect end----")
   };
 
   // Fetch schemas for the selected database
@@ -84,7 +88,9 @@ const SnowflakeConnectForm = () => {
       }
     } catch (error) {
       console.error('Error fetching schemas:', error);
-    }
+    } finally {
+    setSchemaLoading(false); // Hide loader
+}
   };
 
   // Handle database selection
@@ -93,6 +99,7 @@ const SnowflakeConnectForm = () => {
     setSelectedDatabase(database);
     setSchemas([]); // Reset schemas
     setSelectedSchema(''); // Reset selected schema
+    setSchemaLoading(true);
     if (database) {
       fetchSchemas(database); // Fetch schemas for the selected database
     }
@@ -144,8 +151,15 @@ const SnowflakeConnectForm = () => {
         />
       </div>
       <button className="Connectbtn" onClick={handleConnect}>
-        Connect
+        Connect to SNOWFLAKE
       </button>
+
+       {/* Loader for connection */}
+       {loading && (
+                <div className="loader-container">
+                    <PulseLoader color="#2e18c3" />
+                </div>
+            )}
 
       <div className="ConnectionStatus">
         <span id="connection-status" className="ConnectionStatus1 text-primary fs-5">
@@ -175,6 +189,15 @@ const SnowflakeConnectForm = () => {
           </select>
         </div>
       )}
+
+
+      {/* Loader for fetching tables */}
+      {schemaLoading && (
+      <div className="loader-container ">
+      <PulseLoader color="#2e18c3" />
+      </div>
+      )}
+
 
       {schemas.length > 0 && (
         <div className="SchemaSelection">

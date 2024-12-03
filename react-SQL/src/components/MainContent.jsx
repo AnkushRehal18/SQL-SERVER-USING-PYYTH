@@ -1,12 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import Snowlogin from './Snowlogin';
 import SSMSConn from './SSMSlogin';
+import HashLoader from "react-spinners/HashLoader"; 
+
 
 const MainContent = () => {
   const [selectedTable1, setSelectedTable1] = useState('');
   const [selectedDatabase, setSelectedDatabase] = useState('');
   const [selectedSchema, setSelectedSchema] = useState('');
   const [userSelectedTable, setUserSelectedTable] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showPopup, setShowPopup] = useState(false); // State to manage popup visibility
+  const [popupMessage, setPopupMessage] = useState(''); // State for popup message
 
   // Snowflake data
   const [sfUsername, setSfUsername] = useState('');
@@ -25,12 +30,11 @@ const MainContent = () => {
   useEffect(() => {
     const fetchFromLocalStorage = () => {
       const storedTable1 = localStorage.getItem('selectedTable1') || '';
-      const storedTable = localStorage.getItem('selectedTable') || '';
       const storedDatabase = localStorage.getItem('selectedDatabase') || '';
       const storedSchema = localStorage.getItem('selectedSchema') || '';
 
-      setSelectedTable1(storedTable);
-      setUserSelectedTable(storedTable1);      ///user is entering this table  
+      setSelectedTable1(storedTable1);
+      setUserSelectedTable(storedTable1);
       setSelectedDatabase(storedDatabase);
       setSelectedSchema(storedSchema);
 
@@ -40,7 +44,6 @@ const MainContent = () => {
       setSfAccount(localStorage.getItem('sfAccount') || '');
       setSfWarehouse(localStorage.getItem('sfWarehouse') || '');
       
-
       // SSMS
       setSsmsSelectedTable(localStorage.getItem('ssmsSelectedTable') || '');
       setSsmsUsername(localStorage.getItem('ssmsUsername') || '');
@@ -50,7 +53,6 @@ const MainContent = () => {
 
       console.log('Fetched from localStorage:', {
         storedTable1,
-        storedTable,
         storedDatabase,
         storedSchema,
       });
@@ -61,10 +63,10 @@ const MainContent = () => {
 
   const handleLoadToSnowflake = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
-    // Fetch the latest values from localStorage just before making the API call
+    // Prepare data to send to API
     const bodyData = {
-      // selectedTable1: localStorage.getItem('selectedTable1') || '',
       selectedDatabase: localStorage.getItem('selectedDatabase') || '',
       selectedSchema: localStorage.getItem('selectedSchema') || '',
       userSelectedTable: localStorage.getItem('selectedTable1') || '',
@@ -94,9 +96,22 @@ const MainContent = () => {
 
       const data = await response.json();
       console.log('API Response:', data);
+      
+      // Set success message for popup
+      setPopupMessage(data.message || 'Data loaded successfully!');
     } catch (error) {
       console.error('Error:', error);
+      
+      // Set error message for popup
+      setPopupMessage(error.message);
+    } finally {
+      setLoading(false); // Hide loader
+      setShowPopup(true); // Show popup after loading completes
     }
+  };
+
+  const closePopup = () => {
+    setShowPopup(false);
   };
 
   return (
@@ -106,18 +121,35 @@ const MainContent = () => {
         <SSMSConn />
         <Snowlogin />
       </div>
-      <div className="buttonclass" onClick={handleLoadToSnowflake} style={{ cursor: 'pointer' }}>
-      <div className="loadbtn" >
-  <button id="ldbtn" onClick={(e) => e.stopPropagation()}>
-    LOAD
-  </button>
-</div>
 
+      <div className="buttonclass">
+        <div className="loadbtn" onClick={handleLoadToSnowflake} style={{ cursor: 'pointer' }}>
+          <button id="ldbtn" onClick={(e) => e.stopPropagation()}>
+            LOAD
+          </button>
+        </div>
+
+        {/* Loader Overlay */}
+        {loading && (
+          <div className="loader-overlay">
+            <HashLoader color="#2d11ec" size={100}/>
+          </div>
+        )}
+        
+        {/* Popup Modal */}
+        {showPopup && (
+          <div className="popup-overlay">
+            <div className="popup-content">
+              <h2>Notification</h2>
+              <p>{popupMessage}</p>
+              <button className='btn-primary' onClick={closePopup}>Close</button>
+            </div>
+          </div>
+        )}
+        
       </div>
     </>
   );
 };
 
 export default MainContent;
-
-

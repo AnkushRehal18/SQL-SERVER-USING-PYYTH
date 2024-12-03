@@ -2,7 +2,7 @@ body {
   margin: 0;
   padding: 0;
   font-family: 'Arial', sans-serif;
-  background: linear-gradient(to bottom, #df64c3, #93aae0);
+  background-image: url('/new1.png');
   min-height: 100vh;
   color: #333;
   display: flex;
@@ -138,10 +138,37 @@ body {
   width:20%;
 }
 
+
+/* Overlay to dim the background */
+.loader-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5); /* Black with opacity */
+  display: flex;
+  align-items: center; /* Vertical centering */
+  justify-content: center; /* Horizontal centering */
+  z-index: 9999; /* Ensure it appears on top */
+}
+
+/* Hide the overlay when not loading */
+.loader-overlay.hidden {
+  display: none;
+}
+
+/* Loader styling */
+.HashLoader {
+  z-index: 10000; /* Ensure loader is above everything */
+}
+
+
 .buttonclass{
   display: flex;
   width: 100%;
   justify-content: center;
+
 }
   .loadbtn input:focus {
     outline: none;
@@ -491,4 +518,64 @@ h3 {
     font-size: 18px;
     color: #2e18c3;
     margin-bottom: 10px;
+}
+
+/* MainContent.css */
+
+/* Loader Overlay */
+.loader-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000; /* Ensure it appears above other content */
+}
+
+/* Popup Overlay */
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7); /* Dark background */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000; /* Ensure it appears above other content */
+}
+
+.popup-content {
+  background-color: white; /* White background for the popup */
+  border-radius: 8px; /* Rounded corners */
+  padding: 20px; /* Padding around content */
+  max-width: 400px; /* Max width of the popup */
+  text-align: center; /* Center text */
+}
+
+.popup-content h2 {
+  margin-bottom: 10px; /* Space between title and message */
+}
+
+.popup-content p {
+  margin-bottom: 20px; /* Space between message and button */
+}
+
+.btn-primary {
+ background-color: #007bff; /* Bootstrap primary color */
+ color: white; /* White text */
+ border-radius: 5px; /* Rounded corners */
+ border: none; /* No border */
+ padding: 10px; /* Padding around button text */
+ cursor: pointer; /* Pointer cursor on hover */
+ transition: background-color .3s; /* Transition effect for hover */
+}
+
+.btn-primary:hover {
+ background-color: #0056b3; /* Darker blue on hover */
 }
